@@ -27,6 +27,8 @@ df["Tkl_per90"] = df["Tkl"] / (df["Min"] / 90)
 df["Int_per90"] = df["Int"] / (df["Min"] / 90)
 df["DefActions_per90"] = (df["Tkl"] + df["Int"] + df["Clr"]) / (df["Min"] / 90)
 
+
+# For the basic layout of Dash, I have used the documentation "https://dash.plotly.com/layout" for reference.
 # Initializing the Dash app
 app = dash.Dash(__name__)
 
@@ -35,6 +37,7 @@ app.layout = html.Div(
     [
         html.H1("Defensive Performance Analysis Dashboard"),
         html.Label("Select League"),
+        # Used the logic in dropdown similar to a stackoverflow answer "https://stackoverflow.com/questions/53523138/create-dropdown-with-label-and-values-using-panda-library-and-dash-plotly-in-pyt".
         dcc.Dropdown(
             id="league-filter",
             options=[
@@ -50,6 +53,7 @@ app.layout = html.Div(
 )
 
 
+# For the callback functionality, I have used the documentation "https://dash.plotly.com/basic-callbacks" for reference.
 # We will be using callbacks to update the graphs whenever the league in the dropdown is changed.
 @app.callback(
     [
@@ -67,6 +71,7 @@ def update_dashboard(selected_league):
     else:
         filtered_df = df[df["Comp"] == selected_league]
 
+    # Used the documentation "https://plotly.com/python/line-and-scatter/" to create the scatter plot.
     # Using plotly to create scatter plot which displays the relationship between tackles per 90 and interceptions per 90.
     scatter_fig = px.scatter(
         filtered_df,
@@ -78,6 +83,7 @@ def update_dashboard(selected_league):
         title="Tackles per 90 vs Interceptions per 90",
     )
 
+    # Used the documentation "https://plotly.com/python/bar-charts/" to create the bar chart.
     # Using plotly to create bar chart which shows the average defensive actions per 90 for each position.
     avg_by_position = filtered_df.groupby("Pos", as_index=False)[
         "DefActions_per90"
@@ -91,6 +97,7 @@ def update_dashboard(selected_league):
         title="Average Defensive Actions per 90 by Position",
     )
 
+    # "https://plotly.com/python/table/" to create the table.
     # Top 10 players table
     top_10 = filtered_df.sort_values("DefActions_per90", ascending=False).head(10)
 
