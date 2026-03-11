@@ -1,28 +1,36 @@
 import dash
+
+# Importing dcc i.e dash core components for dropdown and graph elements.
 from dash import dcc, html
+
+#
 from dash.dependencies import Input, Output
+
+# We will be using plotly for scatter and charts.
 import plotly.express as px
+
+# We will be using this to make table for top 10 players.
 import plotly.graph_objects as go
 import pandas as pd
 
-# Load football dataset
+# Loading the football dataset
 df = pd.read_csv("dataset.csv")
 
-# Keep only useful columns
+# Keeping only useful columns which will give us insights about the defensive performance of the players and dropping the rest of the columns.
 df = df[["Player", "Pos", "Comp", "Min", "Tkl", "Int", "Clr"]]
 
-# Remove players with low playing time
+# Removing players with low playing time as players who have played less than 300 minutes will not provide meaningful insgihts and may act as outliers in our analysis.
 df = df[df["Min"] > 300]
 
-# Create per 90 metrics
+# Creating per 90 metrics to compare players fairly regardless of their total playing time.
 df["Tkl_per90"] = df["Tkl"] / (df["Min"] / 90)
 df["Int_per90"] = df["Int"] / (df["Min"] / 90)
 df["DefActions_per90"] = (df["Tkl"] + df["Int"] + df["Clr"]) / (df["Min"] / 90)
 
-# Initialize Dash app
+# Initializing the Dash app
 app = dash.Dash(__name__)
 
-# Layout
+# Things listed in this will be displayed on the dashboard.
 app.layout = html.Div(
     [
         html.H1("Defensive Performance Analysis Dashboard"),
@@ -42,7 +50,7 @@ app.layout = html.Div(
 )
 
 
-# Callback to update all views
+# We will be using callbacks to update the graphs whenever the league in the dropdown is changed.
 @app.callback(
     [
         Output("scatter-plot", "figure"),
@@ -53,13 +61,13 @@ app.layout = html.Div(
 )
 def update_dashboard(selected_league):
 
-    # Filter data
+    # If no league is selected, it will show the graph for all the leagues. Else, it will only keep the rows  where "Comp" matches the league.
     if selected_league is None:
         filtered_df = df
     else:
         filtered_df = df[df["Comp"] == selected_league]
 
-    # Scatterplot
+    # Using plotly to create scatter plot which displays the relationship between tackles per 90 and interceptions per 90.
     scatter_fig = px.scatter(
         filtered_df,
         x="Tkl_per90",
@@ -70,7 +78,7 @@ def update_dashboard(selected_league):
         title="Tackles per 90 vs Interceptions per 90",
     )
 
-    # Bar chart
+    # Using plotly to create bar chart which shows the average defensive actions per 90 for each position.
     avg_by_position = filtered_df.groupby("Pos", as_index=False)[
         "DefActions_per90"
     ].mean()
