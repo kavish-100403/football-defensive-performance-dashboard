@@ -1,4 +1,5 @@
 import dash
+from dash import ctx
 
 # Importing dcc i.e dash core components for dropdown and graph elements.
 from dash import dcc, html
@@ -28,9 +29,23 @@ df["Int_per90"] = df["Int"] / (df["Min"] / 90)
 df["DefActions_per90"] = (df["Tkl"] + df["Int"] + df["Clr"]) / (df["Min"] / 90)
 
 
+position_colors = {
+    "DF": "#636EFA",
+    "DF,FW": "#EF553B",
+    "DF,MF": "#00CC96",
+    "FW": "#AB63FA",
+    "FW,DF": "#FFA15A",
+    "FW,MF": "#19D3F3",
+    "GK": "#FF6692",
+    "MF": "#B6E880",
+    "MF,DF": "#FF97FF",
+    "MF,FW": "#FECB52",
+}
+
 # For the basic layout of Dash, I have used the documentation "https://dash.plotly.com/layout" for reference.
 # Initializing the Dash app
 app = dash.Dash(__name__)
+server = app.server
 
 # Things listed in this will be displayed on the dashboard.
 app.layout = html.Div(
@@ -66,6 +81,20 @@ app.layout = html.Div(
                             ],
                             placeholder="Choose a league",
                         ),
+                        html.Button(
+                            "Reset Filters",
+                            id="reset-button",
+                            n_clicks=0,
+                            style={
+                                "marginTop": "12px",
+                                "padding": "8px 14px",
+                                "border": "none",
+                                "borderRadius": "6px",
+                                "backgroundColor": "#444",
+                                "color": "white",
+                                "cursor": "pointer",
+                            },
+                        ),
                     ],
                     style={
                         "backgroundColor": "white",
@@ -75,16 +104,41 @@ app.layout = html.Div(
                         "marginBottom": "20px",
                     },
                 ),
-                # HERO SCATTER CARD
+                # TOP ROW: SCATTER + SIDEBAR
                 html.Div(
-                    [dcc.Graph(id="scatter-plot")],
-                    style={
-                        "backgroundColor": "white",
-                        "padding": "15px",
-                        "borderRadius": "10px",
-                        "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
-                        "marginBottom": "20px",
-                    },
+                    [
+                        # SCATTER (LEFT)
+                        html.Div(
+                            [dcc.Graph(id="scatter-plot")],
+                            style={
+                                "width": "72%",
+                                "backgroundColor": "white",
+                                "padding": "15px",
+                                "borderRadius": "10px",
+                                "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
+                            },
+                        ),
+                        # SIDEBAR (RIGHT)
+                        html.Div(
+                            [
+                                html.H4("Legend", style={"marginBottom": "10px"}),
+                                html.P("Color: Player Position"),
+                                html.P("Size: Minutes Played"),
+                                html.H4("Interactions", style={"marginTop": "16px"}),
+                                html.P("• Select league to filter all views"),
+                                html.P("• Click on a bar to filter by position"),
+                                html.P("• Hover over points to see player details"),
+                            ],
+                            style={
+                                "width": "25%",
+                                "backgroundColor": "white",
+                                "padding": "15px",
+                                "borderRadius": "10px",
+                                "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
+                            },
+                        ),
+                    ],
+                    style={"display": "flex", "gap": "20px", "marginBottom": "20px"},
                 ),
                 # BOTTOM ROW
                 html.Div(
@@ -93,7 +147,7 @@ app.layout = html.Div(
                         html.Div(
                             [dcc.Graph(id="bar-chart")],
                             style={
-                                "width": "48%",
+                                "width": "50%",
                                 "backgroundColor": "white",
                                 "padding": "15px",
                                 "borderRadius": "10px",
@@ -104,7 +158,7 @@ app.layout = html.Div(
                         html.Div(
                             [dcc.Graph(id="top-players-table")],
                             style={
-                                "width": "48%",
+                                "width": "50%",
                                 "backgroundColor": "white",
                                 "padding": "15px",
                                 "borderRadius": "10px",
@@ -114,42 +168,41 @@ app.layout = html.Div(
                     ],
                     style={
                         "display": "flex",
-                        "justifyContent": "space-between",
                         "gap": "20px",
                         "marginBottom": "20px",
                     },
                 ),
                 # SMALL INFO BOX
-                html.Div(
-                    [
-                        html.H4("Legend", style={"marginBottom": "10px"}),
-                        html.P("Color: Player Position", style={"margin": "4px 0"}),
-                        html.P("Size: Minutes Played", style={"margin": "4px 0"}),
-                        html.H4(
-                            "Interactions",
-                            style={"marginTop": "16px", "marginBottom": "10px"},
-                        ),
-                        html.P(
-                            "• Select league to filter all views",
-                            style={"margin": "4px 0"},
-                        ),
-                        html.P(
-                            "• Click on a bar to filter by position",
-                            style={"margin": "4px 0"},
-                        ),
-                        html.P(
-                            "• Hover over points to see player details",
-                            style={"margin": "4px 0"},
-                        ),
-                    ],
-                    style={
-                        "backgroundColor": "white",
-                        "padding": "15px",
-                        "borderRadius": "10px",
-                        "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
-                        "width": "320px",
-                    },
-                ),
+                # html.Div(
+                #     [
+                #         html.H4("Legend", style={"marginBottom": "10px"}),
+                #         html.P("Color: Player Position", style={"margin": "4px 0"}),
+                #         html.P("Size: Minutes Played", style={"margin": "4px 0"}),
+                #         html.H4(
+                #             "Interactions",
+                #             style={"marginTop": "16px", "marginBottom": "10px"},
+                #         ),
+                #         html.P(
+                #             "• Select league to filter all views",
+                #             style={"margin": "4px 0"},
+                #         ),
+                #         html.P(
+                #             "• Click on a bar to filter by position",
+                #             style={"margin": "4px 0"},
+                #         ),
+                #         html.P(
+                #             "• Hover over points to see player details",
+                #             style={"margin": "4px 0"},
+                #         ),
+                #     ],
+                #     style={
+                #         "backgroundColor": "white",
+                #         "padding": "15px",
+                #         "borderRadius": "10px",
+                #         "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
+                #         "width": "320px",
+                #     },
+                # ),
             ],
             style={"maxWidth": "1200px", "margin": "0 auto", "padding": "20px"},
         ),
@@ -166,35 +219,45 @@ app.layout = html.Div(
         Output("bar-chart", "figure"),
         Output("top-players-table", "figure"),
     ],
-    Input("league-filter", "value"),
-    Input("bar-chart", "clickData"),
+    [
+        Input("league-filter", "value"),
+        Input("bar-chart", "clickData"),
+        Input("reset-button", "n_clicks"),
+    ],
 )
-def update_dashboard(selected_league, click_data):
+def update_dashboard(selected_league, click_data, reset_clicks):
 
     # If no league is selected, it will show the graph for all the leagues. Else, it will only keep the rows  where "Comp" matches the league.
     if selected_league is None:
-        filtered_df = df
+        league_filtered_df = df
     else:
-        filtered_df = df[df["Comp"] == selected_league]
+        league_filtered_df = df[df["Comp"] == selected_league]
+    filtered_df = league_filtered_df.copy()
 
     # Filter data by clicked position from bar chart
     selected_position = None
-    if click_data and "points" in click_data:
+    triggered_id = ctx.triggered_id
+
+    if triggered_id == "bar-chart" and click_data and "points" in click_data:
         selected_position = click_data["points"][0]["x"]
+
     if selected_position:
         filtered_df = filtered_df[filtered_df["Pos"] == selected_position]
 
     # Used the documentation "https://plotly.com/python/line-and-scatter/" to create the scatter plot.
     # Using plotly to create scatter plot which displays the relationship between tackles per 90 and interceptions per 90.
-    title_text = "Defensive Activity: Tackles vs Interceptions (Per 90 Minutes)"
+    title_text = "Player Defensive Activity Distribution"
 
     if selected_position:
         title_text += f" | Position: {selected_position}"
+    else:
+        title_text += " | All Positions"
     scatter_fig = px.scatter(
         filtered_df,
         x="Tkl_per90",
         y="Int_per90",
         color="Pos",
+        color_discrete_map=position_colors,
         size="Min",
         hover_name="Player",
         hover_data={
@@ -212,8 +275,8 @@ def update_dashboard(selected_league, click_data):
 
     scatter_fig.update_layout(
         height=500,
-        xaxis_title="Tackles per 90 Minutes",
-        yaxis_title="Interceptions per 90 Minutes",
+        xaxis_title="Tackles per 90",
+        yaxis_title="Interceptions per 90",
         title_font=dict(size=20),
         xaxis_title_font=dict(size=14),
         yaxis_title_font=dict(size=14),
@@ -222,19 +285,33 @@ def update_dashboard(selected_league, click_data):
 
     # Used the documentation "https://plotly.com/python/bar-charts/" to create the bar chart.
     # Using plotly to create bar chart which shows the average defensive actions per 90 for each position.
-    avg_by_position = filtered_df.groupby("Pos", as_index=False)[
+    avg_by_position = league_filtered_df.groupby("Pos", as_index=False)[
         "DefActions_per90"
     ].mean()
+
+    # Create custom bar colors
+    if selected_position:
+        custom_colors = []
+        for pos in avg_by_position["Pos"]:
+            if pos == selected_position:
+                custom_colors.append(position_colors.get(pos, "#636EFA"))
+            else:
+                custom_colors.append("#D3D3D3")
+    else:
+        custom_colors = [
+            position_colors.get(pos, "#636EFA") for pos in avg_by_position["Pos"]
+        ]
 
     bar_fig = px.bar(
         avg_by_position,
         x="Pos",
         y="DefActions_per90",
-        color="Pos",
-        title="Average Defensive Actions per 90 by Position",
+        title="Defensive Contribution Across Player Positions",
     )
 
-    bar_fig.update_traces(marker_line_width=1.5, marker_line_color="black")
+    bar_fig.update_traces(
+        marker_color=custom_colors, marker_line_width=1.5, marker_line_color="black"
+    )
 
     bar_fig.update_layout(
         xaxis_title="Player Position",
@@ -274,7 +351,7 @@ def update_dashboard(selected_league, click_data):
     )
 
     table_fig.update_layout(
-        title="Top 10 Defensive Players",
+        title="Top Defensive Performers (Ranked by Actions per 90)",
         title_font=dict(size=18),
         height=350,
         margin=dict(l=10, r=10, t=60, b=10),
