@@ -4,7 +4,7 @@
 
 ### 1. Clone the repository
 ```bash
-https://github.com/kavish-100403/football-defensive-performance-dashboard.git
+git clone https://github.com/kavish-100403/football-defensive-performance-dashboard.git
 cd football-defensive-performance-dashboard
 ```
 ### 2. Create a Virtual Environment
