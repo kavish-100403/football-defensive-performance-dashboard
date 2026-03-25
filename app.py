@@ -1,10 +1,12 @@
 import dash
+
+# ctx lets us know which input trigerred the callback.
 from dash import ctx
 
 # Importing dcc i.e dash core components for dropdown and graph elements.
 from dash import dcc, html
 
-#
+# They are used for callbacks. Automatically updates the ouput when input is changed.
 from dash.dependencies import Input, Output
 
 # We will be using plotly for scatter and charts.
@@ -28,7 +30,23 @@ df["Tkl_per90"] = df["Tkl"] / (df["Min"] / 90)
 df["Int_per90"] = df["Int"] / (df["Min"] / 90)
 df["DefActions_per90"] = (df["Tkl"] + df["Int"] + df["Clr"]) / (df["Min"] / 90)
 
+# Changing short position names to full names for better readibility.
+position_label_map = {
+    "DF": "Defender",
+    "MF": "Midfielder",
+    "FW": "Forward",
+    "GK": "Goalkeeper",
+    "DF,MF": "Defender / Midfielder",
+    "MF,DF": "Midfielder / Defender",
+    "DF,FW": "Defender / Forward",
+    "FW,DF": "Forward / Defender",
+    "MF,FW": "Midfielder / Forward",
+    "FW,MF": "Forward / Midfielder",
+}
+# Display-friendly position labels used in hover text and tables.
+df["Position Label"] = df["Pos"].map(position_label_map).fillna(df["Pos"])
 
+# We are using this to assign fixed colors for each position. This is done to maintain consistency accross the dashboard.
 position_colors = {
     "DF": "#636EFA",
     "DF,FW": "#EF553B",
@@ -42,7 +60,8 @@ position_colors = {
     "MF,FW": "#FECB52",
 }
 
-# For the basic layout of Dash, I have used the documentation "https://dash.plotly.com/layout" for reference.
+# Reference: Dash layout documentation
+# "https://dash.plotly.com/layout" for reference.
 # Initializing the Dash app
 app = dash.Dash(__name__)
 server = app.server
@@ -50,7 +69,7 @@ server = app.server
 # Things listed in this will be displayed on the dashboard.
 app.layout = html.Div(
     [
-        # PAGE TITLE
+        # It will create thetop heading of the dashboard.
         html.H1(
             "Defensive Performance Analysis Dashboard",
             style={
@@ -59,12 +78,13 @@ app.layout = html.Div(
                 "fontFamily": "Arial, sans-serif",
             },
         ),
-        # MAIN CONTAINER
+        # Main container, it will include all the components of the dashboard.
         html.Div(
             [
-                # FILTER CARD
+                # It will contain a label, dropdown for league selection and the reset button to clear all the filters.
                 html.Div(
                     [
+                        # Label for the dropdown
                         html.Label(
                             "Select League",
                             style={
@@ -73,6 +93,7 @@ app.layout = html.Div(
                                 "marginBottom": "8px",
                             },
                         ),
+                        # Dropdown for league selection.
                         dcc.Dropdown(
                             id="league-filter",
                             options=[
@@ -81,6 +102,7 @@ app.layout = html.Div(
                             ],
                             placeholder="Choose a league",
                         ),
+                        # Reset filter button
                         html.Button(
                             "Reset Filters",
                             id="reset-button",
@@ -104,10 +126,10 @@ app.layout = html.Div(
                         "marginBottom": "20px",
                     },
                 ),
-                # TOP ROW: SCATTER + SIDEBAR
+                # This container will contain scatter plot on the left side and the legend on the right side.
                 html.Div(
                     [
-                        # SCATTER (LEFT)
+                        # Scatter Plot
                         html.Div(
                             [dcc.Graph(id="scatter-plot")],
                             style={
@@ -118,16 +140,52 @@ app.layout = html.Div(
                                 "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
                             },
                         ),
-                        # SIDEBAR (RIGHT)
+                        # Legend
+                        # Updated the legend text after peer feedback so that the legend is more detailed and informative.
                         html.Div(
                             [
                                 html.H4("Legend", style={"marginBottom": "10px"}),
-                                html.P("Color: Player Position"),
-                                html.P("Size: Minutes Played"),
-                                html.H4("Interactions", style={"marginTop": "16px"}),
-                                html.P("• Select league to filter all views"),
-                                html.P("• Click on a bar to filter by position"),
-                                html.P("• Hover over points to see player details"),
+                                html.P(
+                                    "Color Encoding:",
+                                    style={"fontWeight": "bold", "marginBottom": "4px"},
+                                ),
+                                html.P(
+                                    "Each color represents a player position "
+                                    "(Defender, Midfielder, Forward, Goalkeeper, or hybrid roles).",
+                                    style={
+                                        "marginTop": "0",
+                                        "marginBottom": "10px",
+                                        "lineHeight": "1.5",
+                                    },
+                                ),
+                                html.P(
+                                    "Size Encoding:",
+                                    style={"fontWeight": "bold", "marginBottom": "4px"},
+                                ),
+                                html.P(
+                                    "Larger markers represent players with more minutes played.",
+                                    style={
+                                        "marginTop": "0",
+                                        "marginBottom": "10px",
+                                        "lineHeight": "1.5",
+                                    },
+                                ),
+                                html.H4(
+                                    "Interactions",
+                                    style={"marginTop": "16px", "marginBottom": "10px"},
+                                ),
+                                html.P(
+                                    "• Select a league to filter all views",
+                                    style={"margin": "4px 0"},
+                                ),
+                                html.P(
+                                    "• Click a bar to filter by position",
+                                    style={"margin": "4px 0"},
+                                ),
+                                html.P(
+                                    "• Hover over points to view detailed player statistics",
+                                    style={"margin": "4px 0"},
+                                ),
                             ],
                             style={
                                 "width": "25%",
@@ -140,10 +198,10 @@ app.layout = html.Div(
                     ],
                     style={"display": "flex", "gap": "20px", "marginBottom": "20px"},
                 ),
-                # BOTTOM ROW
+                # This contaier will contain the br chart on the left side and the table for top 10 players on the right side.
                 html.Div(
                     [
-                        # BAR CHART CARD
+                        # Bar Chart
                         html.Div(
                             [dcc.Graph(id="bar-chart")],
                             style={
@@ -154,7 +212,7 @@ app.layout = html.Div(
                                 "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
                             },
                         ),
-                        # TABLE CARD
+                        # Top 10 Players Table
                         html.Div(
                             [dcc.Graph(id="top-players-table")],
                             style={
@@ -172,37 +230,6 @@ app.layout = html.Div(
                         "marginBottom": "20px",
                     },
                 ),
-                # SMALL INFO BOX
-                # html.Div(
-                #     [
-                #         html.H4("Legend", style={"marginBottom": "10px"}),
-                #         html.P("Color: Player Position", style={"margin": "4px 0"}),
-                #         html.P("Size: Minutes Played", style={"margin": "4px 0"}),
-                #         html.H4(
-                #             "Interactions",
-                #             style={"marginTop": "16px", "marginBottom": "10px"},
-                #         ),
-                #         html.P(
-                #             "• Select league to filter all views",
-                #             style={"margin": "4px 0"},
-                #         ),
-                #         html.P(
-                #             "• Click on a bar to filter by position",
-                #             style={"margin": "4px 0"},
-                #         ),
-                #         html.P(
-                #             "• Hover over points to see player details",
-                #             style={"margin": "4px 0"},
-                #         ),
-                #     ],
-                #     style={
-                #         "backgroundColor": "white",
-                #         "padding": "15px",
-                #         "borderRadius": "10px",
-                #         "boxShadow": "0 2px 8px rgba(0,0,0,0.08)",
-                #         "width": "320px",
-                #     },
-                # ),
             ],
             style={"maxWidth": "1200px", "margin": "0 auto", "padding": "20px"},
         ),
@@ -211,7 +238,8 @@ app.layout = html.Div(
 )
 
 
-# For the callback functionality, I have used the documentation "https://dash.plotly.com/basic-callbacks" for reference.
+# Reference: Dash basic callbacks documentation
+# "https://dash.plotly.com/basic-callbacks" for reference.
 # We will be using callbacks to update the graphs whenever the league in the dropdown is changed.
 @app.callback(
     [
@@ -227,31 +255,43 @@ app.layout = html.Div(
 )
 def update_dashboard(selected_league, click_data, reset_clicks):
 
-    # If no league is selected, it will show the graph for all the leagues. Else, it will only keep the rows  where "Comp" matches the league.
+    # If no league is selected, it will show the graph for all the leagues. Else, keep only the rows of the selected league. Then create a copy of the filtered dataframe for further filtering.
     if selected_league is None:
         league_filtered_df = df
     else:
         league_filtered_df = df[df["Comp"] == selected_league]
     filtered_df = league_filtered_df.copy()
 
-    # Filter data by clicked position from bar chart
+    # This will check what caused the callback to trigger.
     selected_position = None
+    # Reference: Dash advanced callbacks documentation
+    # https://dash.plotly.com/advanced-callbacks
     triggered_id = ctx.triggered_id
 
+    # Reference: Stack Overflow discussion on handling clickData in Dash graphs
+    #   https://stackoverflow.com/questions/61308628/dash-plotly-clickdata-to-filter-dataframe
     if triggered_id == "bar-chart" and click_data and "points" in click_data:
-        selected_position = click_data["points"][0]["x"]
+        clicked_position_label = click_data["points"][0]["x"]
+        reverse_position_map = {v: k for k, v in position_label_map.items()}
+        selected_position = reverse_position_map.get(
+            clicked_position_label, clicked_position_label
+        )
 
     if selected_position:
         filtered_df = filtered_df[filtered_df["Pos"] == selected_position]
 
-    # Used the documentation "https://plotly.com/python/line-and-scatter/" to create the scatter plot.
-    # Using plotly to create scatter plot which displays the relationship between tackles per 90 and interceptions per 90.
     title_text = "Player Defensive Activity Distribution"
 
+    # In the title the user will see the full position name when selecting a bar graph instead of the short position code.
     if selected_position:
-        title_text += f" | Position: {selected_position}"
+        title_text += f" | Position: {position_label_map.get(selected_position, selected_position)}"
     else:
         title_text += " | All Positions"
+
+    # Reference: Plotly scatter plot documentation
+    # "https://plotly.com/python/line-and-scatter/".
+    # Using plotly to create scatter plot which displays the relationship between tackles per 90 and interceptions per 90.
+    # Scatter plot creation
     scatter_fig = px.scatter(
         filtered_df,
         x="Tkl_per90",
@@ -260,8 +300,16 @@ def update_dashboard(selected_league, click_data, reset_clicks):
         color_discrete_map=position_colors,
         size="Min",
         hover_name="Player",
+        custom_data=[
+            "Position Label",
+            "Comp",
+            "Min",
+            "Tkl_per90",
+            "Int_per90",
+            "DefActions_per90",
+        ],
         hover_data={
-            "Pos": True,
+            "Pos": False,
             "Comp": True,
             "Min": True,
             "Tkl_per90": ":.2f",
@@ -271,8 +319,21 @@ def update_dashboard(selected_league, click_data, reset_clicks):
         title=title_text,
     )
 
-    scatter_fig.update_traces(marker=dict(opacity=0.7))
+    # This is used to make the overlapping points more visible.
+    scatter_fig.update_traces(
+        marker=dict(opacity=0.7),
+        hovertemplate=(
+            "<b>%{hovertext}</b><br>"
+            "Position: %{customdata[0]}<br>"
+            "League: %{customdata[1]}<br>"
+            "Minutes Played: %{customdata[2]}<br>"
+            "Tackles per 90: %{customdata[3]}<br>"
+            "Interceptions per 90: %{customdata[4]}<br>"
+            "Defensive Actions per 90: %{customdata[5]}<extra></extra>"
+        ),
+    )
 
+    # update_layout is used to control the chart height, axis , title, margin etc.
     scatter_fig.update_layout(
         height=500,
         xaxis_title="Tackles per 90",
@@ -283,12 +344,12 @@ def update_dashboard(selected_league, click_data, reset_clicks):
         margin=dict(l=40, r=20, t=60, b=40),
     )
 
-    # Used the documentation "https://plotly.com/python/bar-charts/" to create the bar chart.
-    # Using plotly to create bar chart which shows the average defensive actions per 90 for each position.
-    avg_by_position = league_filtered_df.groupby("Pos", as_index=False)[
-        "DefActions_per90"
-    ].mean()
+    # It groups players by position and computes the average defensive actions per 90 for each position.
+    avg_by_position = league_filtered_df.groupby(
+        ["Pos", "Position Label"], as_index=False
+    )["DefActions_per90"].mean()
 
+    # If a bar is selected in the bar chart, that bar keeps it original color while the other bars are grayed out.
     # Create custom bar colors
     if selected_position:
         custom_colors = []
@@ -302,9 +363,12 @@ def update_dashboard(selected_league, click_data, reset_clicks):
             position_colors.get(pos, "#636EFA") for pos in avg_by_position["Pos"]
         ]
 
+    # Reference: Plotly bar chart documentation
+    # "https://plotly.com/python/bar-charts/".
+    # Using plotly to create bar chart which shows the average defensive actions per 90 for each position.
     bar_fig = px.bar(
         avg_by_position,
-        x="Pos",
+        x="Position Label",
         y="DefActions_per90",
         title="Defensive Contribution Across Player Positions",
     )
@@ -323,8 +387,8 @@ def update_dashboard(selected_league, click_data, reset_clicks):
         margin=dict(l=40, r=20, t=60, b=40),
         showlegend=False,
     )
-
-    # "https://plotly.com/python/table/" to create the table.
+    # Reference: Plotly table documentation
+    # "https://plotly.com/python/table/"
     # Top 10 players table
     top_10 = filtered_df.sort_values("DefActions_per90", ascending=False).head(10)
 
@@ -332,19 +396,28 @@ def update_dashboard(selected_league, click_data, reset_clicks):
         data=[
             go.Table(
                 header=dict(
-                    values=["Player", "Position", "Tkl/90", "Int/90", "Def Actions/90"],
+                    values=[
+                        "Player",
+                        "Position",
+                        "Tackles/90",
+                        "Interceptions/90",
+                        "Defensive Actions/90",
+                    ],
                     fill_color="lightgray",
-                    align="left",
+                    align="center",
+                    font=dict(size=13),
+                    height=32,
                 ),
                 cells=dict(
                     values=[
                         top_10["Player"],
-                        top_10["Pos"],
+                        top_10["Position Label"],
                         top_10["Tkl_per90"].round(2),
                         top_10["Int_per90"].round(2),
                         top_10["DefActions_per90"].round(2),
                     ],
-                    align="left",
+                    align="center",
+                    height=28,
                 ),
             )
         ]
