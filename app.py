@@ -268,10 +268,12 @@ def update_dashboard(selected_league, click_data, reset_clicks):
     # https://dash.plotly.com/advanced-callbacks
     triggered_id = ctx.triggered_id
 
-    # Reference: Stack Overflow discussion on handling clickData in Dash graphs
-    #   https://stackoverflow.com/questions/61308628/dash-plotly-clickdata-to-filter-dataframe
+    # Reference: Dash interactive graphing and clickData usage
+    # https://dash.plotly.com/interactive-graphing
+    # https://community.plotly.com/t/get-trace-name-from-clickdata/18406
     if triggered_id == "bar-chart" and click_data and "points" in click_data:
         clicked_position_label = click_data["points"][0]["x"]
+        # The below is used for reversing the dictionary to get the short position code from the full position label when a bar is clicked in the bar chart.
         reverse_position_map = {v: k for k, v in position_label_map.items()}
         selected_position = reverse_position_map.get(
             clicked_position_label, clicked_position_label
@@ -322,14 +324,16 @@ def update_dashboard(selected_league, click_data, reset_clicks):
     # This is used to make the overlapping points more visible.
     scatter_fig.update_traces(
         marker=dict(opacity=0.7),
+        # Reference: Plotly hovertemplate customization documentation
+        # https://plotly.com/python/hover-text-and-formatting/
         hovertemplate=(
             "<b>%{hovertext}</b><br>"
             "Position: %{customdata[0]}<br>"
             "League: %{customdata[1]}<br>"
             "Minutes Played: %{customdata[2]}<br>"
-            "Tackles per 90: %{customdata[3]}<br>"
-            "Interceptions per 90: %{customdata[4]}<br>"
-            "Defensive Actions per 90: %{customdata[5]}<extra></extra>"
+            "Tackles per 90: %{customdata[3]:.2f}<br>"
+            "Interceptions per 90: %{customdata[4]:.2f}<br>"
+            "Defensive Actions per 90: %{customdata[5]:.2f}<extra></extra>"
         ),
     )
 
